@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: check
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      initContainers:
+        - name: wait-for-check-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Ждём check-service..."
+              until wget -qO- http://check-service:8080 >/dev/null 2>&1; do
+                echo "check-service ещё не доступен"
+                sleep 3
+              done
+              echo "check-service доступен"
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
